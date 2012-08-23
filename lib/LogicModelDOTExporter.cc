@@ -39,8 +39,6 @@
 using namespace std;
 using namespace degate;
 
-#define MAX_NODES 7
-
 void LogicModelDOTExporter::export_data(std::string const& filename, LogicModel_shptr lmodel) {
 
   if(lmodel == NULL) throw InvalidPointerException("Logic model pointer is NULL.");
@@ -81,8 +79,7 @@ void LogicModelDOTExporter::export_data(std::string const& filename, LogicModel_
       for(LogicModel::net_collection::iterator net_iter = lmodel->nets_begin();
 	  net_iter != lmodel->nets_end(); ++net_iter) {
 	Net_shptr net = (*net_iter).second;
-	if(net->size() < MAX_NODES)
-	  add_net(net);
+        add_net(net);
       }
     }
 
@@ -234,19 +231,16 @@ void LogicModelDOTExporter::add_connection(Net_shptr net,
 					   std::string const& src_name,
 					   std::string const& edge_name) {
 
+  if (!net) {
+      cout << "Oops, net is NULL" << std::endl;
+      return;
+  }
+
   string net_name(oid_to_str("N", net->get_object_id()));
 
   DOTAttributes edge_attrs;
   edge_attrs.add("taillabel", edge_name);
-
-  if(net->size() < MAX_NODES)
-    add_edge(src_name, net_name,  edge_attrs.get_string());
-  else {
-    string implicit_net_name = add_implicit_net(net);
-    edge_attrs.add("color", "red");
-    add_edge(src_name, implicit_net_name, edge_attrs.get_string());
-  }
-
+  add_edge(src_name, net_name,  edge_attrs.get_string());
 }
 
 
