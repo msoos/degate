@@ -22,4 +22,4 @@ export DEGATE_TEMP=/tmp
 export DEGATE_SERVER_URI_PATTERN=http://degate.org/cgi-bin/xmlrpc-server-cgi.pl?channel=%1%
 
 # Launch degate.
-$DEGATE_HOME/degate_bin
+build/$DEGATE_HOME/degate_bin
