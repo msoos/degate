@@ -42,12 +42,6 @@ class LogicModelDOTExporter : public DOTExporter {
 protected:
 
     void add_gate(Gate_shptr gate);
-    void add_via(Via_shptr via);
-    //void add_wire(Wire_shptr wire);
-    void add_net(Net_shptr lmodel);
-
-    void add_connection(Net_shptr net, std::string const& src_name, std::string const& edge_name);
-
     std::string oid_to_str(std::string const& prefix, object_id_t oid);
 
 

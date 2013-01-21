@@ -64,17 +64,6 @@ void LogicModelDOTExporter::export_data(
     add_graph_setting("");
 
     try {
-
-        // iterate over nets
-        /*for(LogicModel::net_collection::iterator
-            net_iter = lmodel->nets_begin()
-            ; net_iter != lmodel->nets_end()
-            ; ++net_iter
-        ) {
-            Net_shptr net = (*net_iter).second;
-            add_net(net);
-        }*/
-
         // iterate over logic model objects
         for(LogicModel::object_collection::iterator
             iter = lmodel->objects_begin()
@@ -86,16 +75,6 @@ void LogicModelDOTExporter::export_data(
             if (Gate_shptr gate = std::tr1::dynamic_pointer_cast<Gate>(o)) {
                 add_gate(gate);
             }
-
-            //Vias
-            /*if (Via_shptr via = std::tr1::dynamic_pointer_cast<Via>(o)) {
-                add_via(via);
-            }*/
-
-            /*
-            else if(Wire_shptr wire = std::tr1::dynamic_pointer_cast<Wire>(o))
-                add_wire(wires_elem, wire, layer_pos);
-             */
         }
 
         for(std::map<object_id_t, std::vector<GateConn> >::const_iterator
@@ -191,19 +170,6 @@ std::string LogicModelDOTExporter::oid_to_str(
     return stm.str();
 }
 
-/*void LogicModelDOTExporter::add_net(Net_shptr net)
-{
-    string net_name(oid_to_str("N", net->get_object_id()));
-
-    DOTAttributes attrs;
-    //attrs.add("label", net_name);
-    attrs.add("shape", "point");
-
-    add_node(net_name, attrs.get_string());
-
-}*/
-
-
 void LogicModelDOTExporter::add_gate(Gate_shptr gate)
 {
     object_id_t gate_id = gate->get_object_id();
@@ -249,45 +215,5 @@ void LogicModelDOTExporter::add_gate(Gate_shptr gate)
         } else {
             it->second.push_back(GateConn(gate_id, conn_name));
         }
-
-        /*add_connection(
-            gate_port->get_net()
-            , node_name
-            , gate_port->get_template_port()->get_name()
-        );*/
     }
 }
-
-
-/*void LogicModelDOTExporter::add_connection(
-    Net_shptr net,
-    std::string const& src_name,
-    std::string const& edge_name
-) {
-
-    if (!net) {
-        cout << "Oops, net is NULL" << std::endl;
-        return;
-    }
-
-    string net_name(oid_to_str("N", net->get_object_id()));
-
-    DOTAttributes edge_attrs;
-    edge_attrs.add("taillabel", edge_name);
-    add_edge(src_name, net_name,  edge_attrs.get_string());
-}*/
-
-
-/*void LogicModelDOTExporter::add_via(Via_shptr via)
-{
-    string via_name(oid_to_str("V", via->get_object_id()));
-
-    DOTAttributes attrs;
-    attrs.add("label", via_name);
-    attrs.add("shape", "box");
-
-    add_node(via_name, attrs.get_string());
-
-    //Edge
-    add_connection(via->get_net(), via_name, "");
-}*/
