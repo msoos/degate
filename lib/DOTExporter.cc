@@ -72,7 +72,7 @@ void DOTExporter::dump_to_file(std::string const& filename) const
         dot_file << *iter << std::endl;
     }
 
-    dot_file << "graph LogicModel {" << std::endl;
+    dot_file << "digraph LogicModel {" << std::endl;
 
     for(std::list<std::string>::const_iterator
         iter = graph_setting_lines.begin()
