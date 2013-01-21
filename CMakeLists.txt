@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 2.6)
 message(STATUS "Using compiler: ${CMAKE_CXX_COMPILER}")
 
 #set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+set(LIBS ${LIBS} "-lxmlrpc -lxmlrpc++ -lxmlrpc -lxmlrpc_util -lxmlrpc_server -lxmlrpc_abyss -lxmlrpc_client++ -lxmlrpc_client -lxmlrpc_client -lxmlrpc_xmlparse -lxmlrpc_xmltok")
 
 
 set(CMAKE_VERBOSE_MAKEFILE true)

@@ -30,6 +30,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 namespace degate {
 
@@ -40,7 +41,7 @@ namespace degate {
   class DOTAttributes {
   private:
 
-    std::map<std::string, std::string> attributes;
+    std::vector<std::pair<std::string, std::string> > attributes;
 
   public:
 
@@ -79,12 +80,12 @@ namespace degate {
      * @param attribute_name The attribute name as a string.
      * @param value The parameter value.
      */
-    template<typename T>
+    /*template<typename T>
     void add_number(std::string const& attribute_name, T value) {
       std::ostringstream stm;
       stm << attribute_name << "=\"" << value << "\"";
       attributes[attribute_name] = stm.str();
-    }
+    }*/
 
 
     /**

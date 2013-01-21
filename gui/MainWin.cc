@@ -60,6 +60,7 @@ along with degate. If not, see <http://www.gnu.org/licenses/>.
 #include <SubProjectAnnotation.h>
 #include <ProjectArchiver.h>
 #include <XmlRpc.h>
+#include <LogicModelDOTExporter.h>
 
 using namespace degate;
 
@@ -191,7 +192,7 @@ void MainWin::on_menu_view_toggle_all_info_layers() {
 
 
 void MainWin::on_menu_view_fullscreen() {
-  if(is_fullscreen) {    
+  if(is_fullscreen) {
     unfullscreen();
     is_fullscreen = false; // according to gtkmm documentation, it would be better to receive a signal
   }
@@ -290,7 +291,7 @@ void MainWin::create_new_project(std::string const& project_dir) {
 void MainWin::on_menu_project_close() {
   if(main_project) {
 
-    if(main_project->is_changed() &&       
+    if(main_project->is_changed() &&
        yes_no_dialog("Warning", "Project data was modified. Should it be saved?"))
       on_menu_project_save();
 
@@ -323,7 +324,7 @@ void MainWin::on_menu_project_settings() {
 
       diameter_t new_port_size = main_project->get_default_port_diameter();
       if(old_port_size != new_port_size) {
-	if(yes_no_dialog("Warning", 
+	if(yes_no_dialog("Warning",
 			 "Default gate port diameter has changed. "
 			 "Should degate update port diameters of all gate ports?"))
 	  update_port_diameters(main_project->get_logic_model(), new_port_size);
@@ -411,6 +412,10 @@ void MainWin::on_export_finished(bool success) {
 
 void MainWin::on_menu_project_save() {
   if(main_project) {
+      std::cerr << "Exporting DOT" << std::endl;
+      ObjectIDRewriter_shptr rewriter(new ObjectIDRewriter(false));
+      LogicModelDOTExporter ee(rewriter);
+      ee.export_data("myfile.dot", main_project->get_logic_model());
     try {
       ProjectExporter exporter;
       exporter.export_all(main_project->get_project_directory(), main_project, false);
@@ -461,7 +466,7 @@ void MainWin::open_project(Glib::ustring project_dir) {
     (new InProgressWin(this, "Opening Project", "Please wait while opening project."));
   ipWin->show();
 
-				 
+
   signal_project_open_finished_.connect(sigc::mem_fun(*this, &MainWin::on_project_load_finished));
   thread = Glib::Thread::create(sigc::bind<const Glib::ustring>
 				(sigc::mem_fun(*this, &MainWin::project_open_thread),
@@ -550,10 +555,10 @@ void MainWin::update_gui_for_loaded_project() {
     ciWin->signal_goto_button_clicked().connect(sigc::mem_fun(*this, &MainWin::goto_object));
 
     rcWin = std::tr1::shared_ptr<RCViolationsWin>
-      (new RCViolationsWin(this, main_project->get_logic_model(), 
+      (new RCViolationsWin(this, main_project->get_logic_model(),
 			   main_project->get_rcv_blacklist()));
     rcWin->signal_goto_button_clicked().connect(sigc::mem_fun(*this, &MainWin::goto_object));
-    
+
 
     modWin = std::tr1::shared_ptr<ModuleWin>(new ModuleWin(this, main_project->get_logic_model()));
     modWin->signal_goto_button_clicked().connect(sigc::mem_fun(*this, &MainWin::goto_object));
@@ -641,7 +646,7 @@ void MainWin::set_layer(unsigned int layer) {
 
 void MainWin::goto_last_emarker() {
   if(main_project != NULL && last_emarker != NULL) {
-    
+
     const BoundingBox & bbox = last_emarker->get_bounding_box();
     Layer_shptr layer =  last_emarker->get_layer();
     highlighted_objects.add(last_emarker);
@@ -660,12 +665,12 @@ void MainWin::goto_object(PlacedLogicModelObject_shptr obj_ptr) {
     if(std::tr1::dynamic_pointer_cast<GatePort>(obj_ptr) ||
        std::tr1::dynamic_pointer_cast<Gate>(obj_ptr))
       layer = main_project->get_logic_model()->get_current_layer();
-    else 
+    else
       layer = obj_ptr->get_layer();
 
     clear_selection();
     selected_objects.add(obj_ptr);
-    highlighted_objects.add(obj_ptr, main_project->get_logic_model()); 
+    highlighted_objects.add(obj_ptr, main_project->get_logic_model());
 
     assert(selected_objects.size() == 1);
     assert(highlighted_objects.size() == 1);
@@ -840,23 +845,23 @@ void MainWin::on_algorithms_func_clicked(int slot_pos) {
   std::tr1::shared_ptr<GfxEditorToolSelection<DegateRenderer> > selection_tool =
     std::tr1::dynamic_pointer_cast<GfxEditorToolSelection<DegateRenderer> >(editor.get_tool());
 
-  BoundingBox bb = selection_tool != NULL && selection_tool->has_selection() ? 
+  BoundingBox bb = selection_tool != NULL && selection_tool->has_selection() ?
     selection_tool->get_bounding_box() : main_project->get_bounding_box();
 
   rm.init(slot_pos, this, bb, main_project);
 
   if(rm.before_dialog(slot_pos)) {
-    
+
     ipWin = std::tr1::shared_ptr<InProgressWin>
       (new InProgressWin(this, "Calculating", "Please wait while calculating.", rm.get_progress_control(slot_pos)));
     ipWin->show();
-    
+
     signal_algorithm_finished_ = std::tr1::shared_ptr<Glib::Dispatcher>(new Glib::Dispatcher);
-    
+
     signal_algorithm_finished_->connect(sigc::bind(sigc::mem_fun(*this,
 								 &MainWin::on_algorithm_finished),
 						   slot_pos));
-    
+
     thread = Glib::Thread::create(sigc::bind(sigc::mem_fun(*this, &MainWin::algorithm_calc_thread),
 					     slot_pos), false);
   }
@@ -1093,7 +1098,7 @@ void MainWin::on_menu_gate_create_by_selection() {
     bool accept_dimension = false;
     int corridor_size = main_project->get_template_dimension();
     if(corridor_size == 0) {
-      if(yes_no_dialog("Snap to Grid", 
+      if(yes_no_dialog("Snap to Grid",
 		       "You have not definded a fixed width or height for gate templates yet. "
 		       "If you want to use template matching and have to deal with up-down or "
 		       "left-right flipped versions of a standard cell, you will most likely "
@@ -1113,13 +1118,13 @@ void MainWin::on_menu_gate_create_by_selection() {
       }
     }
 
-    if(accept_dimension || 
+    if(accept_dimension ||
        (corridor_size > 0 &&
 	yes_no_dialog("Snap to Grid", "Should the gate be snapped to the corridor?"))) {
       // snap upper or left edge to nearest grid line
       // if corridor dimension is undefined, the bottom or right edge of the bounding
       // box is not touched.
-      Grid::ORIENTATION orientation = snap_upper_or_left_edge_to_grid(main_project, 
+      Grid::ORIENTATION orientation = snap_upper_or_left_edge_to_grid(main_project,
 								      bbox, corridor_size);
 
       if(accept_dimension) {
@@ -1128,7 +1133,7 @@ void MainWin::on_menu_gate_create_by_selection() {
 	else if(orientation == Grid::VERTICAL)
 	  main_project->set_template_dimension(bbox.get_height());
 
-	editor.set_corridor_size(main_project->get_template_dimension());	
+	editor.set_corridor_size(main_project->get_template_dimension());
 	project_changed();
       }
 
@@ -1222,7 +1227,7 @@ void MainWin::on_area_selection_resized(BoundingBox const& bbox) {
     double px_per_um = main_project->get_pixel_per_um();
     if(px_per_um > 0) {
       boost::format f("width=%1%px, height=%2%px (w=%3%um, h=%4%um)");
-      f % bbox.get_width() % bbox.get_height() 
+      f % bbox.get_width() % bbox.get_height()
 	% (bbox.get_width() / px_per_um) % (bbox.get_height() / px_per_um);
       m_statusbar.push(f.str());
     }
@@ -1369,7 +1374,7 @@ void MainWin::update_gui_on_selection_change() {
     menu_manager->set_menu_item_sensitivity("/MenuBar/GateMenu/GateSet", selection_active);
 
     /* Do not disable inspection here. Keep last settings. */
-    //if(ciWin != NULL) ciWin->disable_inspection(); 
+    //if(ciWin != NULL) ciWin->disable_inspection();
   }
 
   menu_manager->set_menu_item_sensitivity("/MenuBar/LogicMenu/LogicClearLogicModelInSelection",
@@ -1646,7 +1651,7 @@ void MainWin::on_popup_menu_add_horizontal_grid_line() {
 void MainWin::on_menu_logic_auto_name_gates(AutoNameGates::ORIENTATION orientation) {
   if(main_project != NULL) {
 
-    if(!yes_no_dialog("Warning", 
+    if(!yes_no_dialog("Warning",
 		      "The operation may destroy previously set names. "
 		      "Are you sure you want name all gates?")) return;
 
@@ -1706,14 +1711,14 @@ void MainWin::on_menu_logic_remove_entire_net() {
   if(!main_project || selected_objects.size() < 1) return;
 
   bool failed = false;
-  if(yes_no_dialog("Warning", 
+  if(yes_no_dialog("Warning",
 		   "Do you want to delete the net(s), which is "
 		   "associated with the selected objects(?)")) {
 
 
     std::set<Net_shptr> l;
     BOOST_FOREACH(PlacedLogicModelObject_shptr plo, selected_objects) {
-      if(ConnectedLogicModelObject_shptr clo = 
+      if(ConnectedLogicModelObject_shptr clo =
 	 std::tr1::dynamic_pointer_cast<ConnectedLogicModelObject>(plo)) {
 	if(clo->is_connected()) l.insert(clo->get_net());
       }
@@ -2063,7 +2068,7 @@ bool MainWin::yes_no_dialog(const char * const title, const char * const message
   dialog.set_title(title);
   return dialog.run() == Gtk::RESPONSE_YES;
 }
-    
+
 void MainWin::project_changed() {
 
   if(main_project != NULL) main_project->set_changed();
