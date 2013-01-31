@@ -173,7 +173,7 @@ std::string LogicModelDOTExporter::oid_to_str(
 void LogicModelDOTExporter::add_gate(Gate_shptr gate)
 {
     object_id_t gate_id = gate->get_object_id();
-    string node_name(oid_to_str("G", gate->get_object_id()));
+    string node_name(oid_to_str("G", gate_id));
 
     std::ostringstream stm;
     stm << (gate->has_name() ? gate->get_name() : node_name);
