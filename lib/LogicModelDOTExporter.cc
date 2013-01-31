@@ -91,7 +91,6 @@ void LogicModelDOTExporter::export_data(
             object_id_t from_id = std::numeric_limits<object_id_t>::max();
             std::string from_connection_name;
             bool found_from = false;
-            bool clock = false;
 
             const std::vector<GateConn>& gateConn = it->second;
             for(vector<GateConn>::const_iterator
@@ -99,11 +98,6 @@ void LogicModelDOTExporter::export_data(
                 ; it2 != end2
                 ; it2++
             ) {
-                if (it2->connection_name == "clk") {
-                    clock = true;
-                    break;
-                }
-
                 if (it2->connection_name != "a"
                     && it2->connection_name != "b"
                     && it2->connection_name != "c"
@@ -123,12 +117,6 @@ void LogicModelDOTExporter::export_data(
                     break;
                 }
             }
-            if (clock) {
-                cout
-                << "Not parsing CLK!"
-                << endl;
-                continue;
-            }
 
             if (!found_from
                 && it->first != std::numeric_limits<object_id_t>::max()
@@ -139,28 +127,72 @@ void LogicModelDOTExporter::export_data(
 
                 continue;
             }
-            string from_name;
-            if (it->first == std::numeric_limits<object_id_t>::max()) {
-                cout << "Parsing unknown special node" << endl;
-                from_name = "unknown";
+
+            //It's not special 'unknown' node, so process normally
+            if (it->first != std::numeric_limits<object_id_t>::max()) {
+                string from_name = oid_to_str("G", from_id);
+
+                for(vector<GateConn>::const_iterator
+                    it2 = gateConn.begin(), end2 = gateConn.end()
+                    ; it2 != end2
+                    ; it2++
+                ) {
+                    //Skip gate the connection is coming from
+                    if (it2->gate_id == from_id)
+                        continue;
+
+                    //skip clk
+                    if (it2->connection_name == "clk"
+                        || from_connection_name == "clk"
+                    )
+                        continue;
+
+                    string to_name(oid_to_str("G", it2->gate_id));
+                    DOTAttributes edge_attrs;
+                    edge_attrs.add("headlabel", it2->connection_name);
+                    edge_attrs.add("taillabel", from_connection_name);
+                    add_edge(from_name, to_name, edge_attrs.get_string());
+                }
             } else {
-                from_name = oid_to_str("G", from_id);
-            }
+                //Special 'unknown' node, process specially
+                for(vector<GateConn>::const_iterator
+                    it2 = gateConn.begin(), end2 = gateConn.end()
+                    ; it2 != end2
+                    ; it2++
+                ) {
+                    //skip clk
+                    if (it2->connection_name == "clk")
+                        continue;
 
-            for(vector<GateConn>::const_iterator
-                it2 = gateConn.begin(), end2 = gateConn.end()
-                ; it2 != end2
-                ; it2++
-            ) {
-                //Skip gate the connection is coming from
-                if (it2->gate_id == from_id)
-                    continue;
+                    bool from = false;
+                    if (it2->connection_name != "a"
+                        && it2->connection_name != "b"
+                        && it2->connection_name != "c"
+                        && it2->connection_name != "d"
+                        && it2->connection_name != "e"
+                        && it2->connection_name != "f"
+                        && it2->connection_name != "D"
+                        && it2->connection_name != "1"
+                        && it2->connection_name != "0"
+                        && it2->connection_name != "rst"
+                        && it2->connection_name != ""
+                    ) {
+                        from = true;
+                    }
 
-                string to_name(oid_to_str("G", it2->gate_id));
-                DOTAttributes edge_attrs;
-                edge_attrs.add("headlabel", it2->connection_name);
-                edge_attrs.add("taillabel", from_connection_name);
-                add_edge(from_name, to_name, edge_attrs.get_string());
+                    string gate_name(oid_to_str("G", it2->gate_id));
+                    DOTAttributes edge_attrs;
+                    if (from) {
+                        edge_attrs.add("headlabel", "?");
+                        edge_attrs.add("taillabel", it2->connection_name);
+                        add_edge(gate_name, "unknown", edge_attrs.get_string());
+                    } else {
+                        edge_attrs.add("taillabel", "?");
+                        edge_attrs.add("headlabel", it2->connection_name);
+                        add_edge("unknown", gate_name, edge_attrs.get_string());
+                    }
+
+                }
             }
         }
 
@@ -215,13 +247,20 @@ void LogicModelDOTExporter::add_gate(Gate_shptr gate)
         object_id_t via_id;
         std::string conn_name;
 
-        //Available?
-        if (!gate_port->get_net()) {
+        //other end available?
+        if (gate_port->get_net()) {
+            via_id = gate_port->get_net()->get_object_id();
+        } else {
             via_id = std::numeric_limits<object_id_t>::max();
             conn_name = "unknown";
-        } else {
-            via_id = gate_port->get_net()->get_object_id();
+
+        }
+
+        //Name available?
+        if (gate_port->get_template_port()) {
             conn_name = gate_port->get_template_port()->get_name();
+        } else {
+            conn_name = "unknown";
         }
         //Name of the connection (i.e. 'a', 'b', 'sel', 'clk', etc.)
 
