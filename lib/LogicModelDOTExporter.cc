@@ -64,6 +64,12 @@ void LogicModelDOTExporter::export_data(
     add_graph_setting("");
 
     try {
+        //Add special "unknown" gate
+        DOTAttributes attrs;
+        attrs.add("shape", "box");
+        attrs.add("label", "9999.9999\\n01-Unknown");
+        add_node("unknown", attrs.get_string());
+
         // iterate over logic model objects
         for(LogicModel::object_collection::iterator
             iter = lmodel->objects_begin()
@@ -82,7 +88,7 @@ void LogicModelDOTExporter::export_data(
             ; it != end
             ; it++
         ) {
-            object_id_t from_id;
+            object_id_t from_id = std::numeric_limits<object_id_t>::max();
             std::string from_connection_name;
             bool found_from = false;
             bool clock = false;
@@ -124,14 +130,22 @@ void LogicModelDOTExporter::export_data(
                 continue;
             }
 
-            if (!found_from) {
+            if (!found_from
+                && it->first != std::numeric_limits<object_id_t>::max()
+            ) {
                 cout
-                << "Not found FROM :( -- Skipping via"
+                << "Not found FROM and it's not UNKNOWN :( -- Skipping via"
                 << endl;
 
                 continue;
             }
-            string from_name(oid_to_str("G", from_id));
+            string from_name;
+            if (it->first == std::numeric_limits<object_id_t>::max()) {
+                cout << "Parsing unknown special node" << endl;
+                from_name = "unknown";
+            } else {
+                from_name = oid_to_str("G", from_id);
+            }
 
             for(vector<GateConn>::const_iterator
                 it2 = gateConn.begin(), end2 = gateConn.end()
@@ -178,6 +192,7 @@ void LogicModelDOTExporter::add_gate(Gate_shptr gate)
     std::ostringstream stm;
     stm << (gate->has_name() ? gate->get_name() : node_name);
 
+    //Gate has a template (i.e. is it recognized?)
     if (gate->has_template()) {
         const GateTemplate_shptr tmpl = gate->get_gate_template();
         stm << "\\n" << tmpl->get_name();
@@ -196,14 +211,20 @@ void LogicModelDOTExporter::add_gate(Gate_shptr gate)
     ) {
         GatePort_shptr gate_port = *piter;
 
-        //Not available, skip: Oops, net is NULL
-        if (!gate_port->get_net()) {
-            cout << "OOps, NET is null, skipping" << endl;
-            continue;
-        }
+        //To fill up with data
+        object_id_t via_id;
+        std::string conn_name;
 
-        object_id_t via_id   = gate_port->get_net()->get_object_id();
-        std::string conn_name = gate_port->get_template_port()->get_name();
+        //Available?
+        if (!gate_port->get_net()) {
+            via_id = std::numeric_limits<object_id_t>::max();
+            conn_name = "unknown";
+        } else {
+            via_id = gate_port->get_net()->get_object_id();
+            conn_name = gate_port->get_template_port()->get_name();
+        }
+        //Name of the connection (i.e. 'a', 'b', 'sel', 'clk', etc.)
+
 
         std::map<object_id_t, std::vector<GateConn> >::iterator it =
             via_to_gates.find(via_id);
