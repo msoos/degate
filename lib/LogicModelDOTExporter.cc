@@ -64,12 +64,6 @@ void LogicModelDOTExporter::export_data(
     add_graph_setting("");
 
     try {
-        //Add special "unknown" gate
-        DOTAttributes attrs;
-        attrs.add("shape", "box");
-        attrs.add("label", "9999.9999\\n01-Unknown");
-        add_node("unknown", attrs.get_string());
-
         // iterate over logic model objects
         for(LogicModel::object_collection::iterator
             iter = lmodel->objects_begin()
@@ -154,6 +148,7 @@ void LogicModelDOTExporter::export_data(
                     add_edge(from_name, to_name, edge_attrs.get_string());
                 }
             } else {
+                size_t num = 0;
                 //Special 'unknown' node, process specially
                 for(vector<GateConn>::const_iterator
                     it2 = gateConn.begin(), end2 = gateConn.end()
@@ -181,15 +176,24 @@ void LogicModelDOTExporter::export_data(
                     }
 
                     string gate_name(oid_to_str("G", it2->gate_id));
+
+                    DOTAttributes attrs;
+                    attrs.add("shape", "box");
+                    attrs.add("label", "9999.9999\\n01-Unknown");
+                    std::ostringstream ss;
+                    ss << "unknown" << num;
+                    num++;
+                    add_node(ss.str(), attrs.get_string());
+
                     DOTAttributes edge_attrs;
                     if (from) {
                         edge_attrs.add("headlabel", "?");
                         edge_attrs.add("taillabel", it2->connection_name);
-                        add_edge(gate_name, "unknown", edge_attrs.get_string());
+                        add_edge(gate_name, ss.str(), edge_attrs.get_string());
                     } else {
                         edge_attrs.add("taillabel", "?");
                         edge_attrs.add("headlabel", it2->connection_name);
-                        add_edge("unknown", gate_name, edge_attrs.get_string());
+                        add_edge(ss.str(), gate_name, edge_attrs.get_string());
                     }
 
                 }
